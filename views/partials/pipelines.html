@@ -5,6 +5,7 @@
             <th scope="col">Project</th>
             <th scope="col">Environment</th>
             <th scope="col">Locked by</th>
+            <th scope="col">Locked at</th>
             <th scope="col"></th>
         </tr>
     </thead>
@@ -19,6 +20,9 @@
             </td>
             <td>
                 {{.LockedBy}}
+            </td>
+            <td>
+                {{.LockedAt.Format "2006-01-02 15:04:05"}}
             </td>
             <td>
                 <button onclick="unlockPipeline({{.Project}}, {{.Environment}})" type="button" class="btn btn-danger btn-sm">unlock</button>

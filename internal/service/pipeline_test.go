@@ -43,27 +43,35 @@ func (r *pipelineRepositoryMock) FindLockedPipelines() []domain.Pipeline {
 	return make([]domain.Pipeline, 0)
 }
 
-func getPipelineMock() *domain.Pipeline {
+func getPipelineMock(lockedBy string) *domain.Pipeline {
 	return &domain.Pipeline{
-		PipelineIdentifier: domain.PipelineIdentifier{
-			Project:     project,
-			Environment: environment,
+		PipelineIdentifier: getPipelineIdentifierMock(),
+		PipelineLockedBy: domain.PipelineLockedBy{
+			LockedBy: lockedBy,
 		},
 	}
 }
 
-func getPipelineMockWithLockedByValue() *domain.Pipeline {
-	pipeline := getPipelineMock()
-	lockedBy := user
-	pipeline.LockedBy = lockedBy
+func getPipelineIdentifierMock() domain.PipelineIdentifier {
+	return domain.PipelineIdentifier{
+		Project:     project,
+		Environment: environment,
+	}
+}
 
-	return pipeline
+func getPipelineLockRequestMock(lockedBy string) domain.PipelineLockRequest {
+	return domain.PipelineLockRequest{
+		PipelineIdentifier: getPipelineIdentifierMock(),
+		PipelineLockedBy: domain.PipelineLockedBy{
+			LockedBy: lockedBy,
+		},
+	}
 }
 
 func TestPipelineService_Lock(t *testing.T) {
 	type testCases struct {
 		description             string
-		input                   domain.Pipeline
+		input                   domain.PipelineLockRequest
 		serviceAllowOverLocking bool
 		expectedError           error
 		expectedAddCalls        int
@@ -73,12 +81,12 @@ func TestPipelineService_Lock(t *testing.T) {
 	for _, scenario := range []testCases{
 		{
 			description:   "projectIsEmpty_returnError",
-			input:         domain.Pipeline{},
+			input:         domain.PipelineLockRequest{},
 			expectedError: ProjectEmptyError,
 		},
 		{
 			description: "environmentIsEmpty_returnError",
-			input: domain.Pipeline{
+			input: domain.PipelineLockRequest{
 				PipelineIdentifier: domain.PipelineIdentifier{
 					Project: project,
 				},
@@ -86,41 +94,33 @@ func TestPipelineService_Lock(t *testing.T) {
 			expectedError: EnvironmentEmptyError,
 		},
 		{
-			description:   "lockedByIsNil_returnError",
-			input:         *getPipelineMock(),
-			expectedError: LockedByEmptyError,
-		},
-		{
-			description: "lockedByIsEmptyString_returnError",
-			input: domain.Pipeline{
-				PipelineIdentifier: getPipelineMock().PipelineIdentifier,
-				LockedBy:           "",
-			},
+			description:   "lockedByIsEmptyString_returnError",
+			input:         getPipelineLockRequestMock(""),
 			expectedError: LockedByEmptyError,
 		},
 		{
 			description:         "lockAlreadyExistsAndOverLockingNotAllowed_returnError",
-			input:               *getPipelineMockWithLockedByValue(),
+			input:               getPipelineLockRequestMock(user),
 			expectedError:       PipelineAlreadyLockedError,
-			fakeFindReturnValue: getPipelineMockWithLockedByValue(),
+			fakeFindReturnValue: getPipelineMock(user),
 		},
 		{
 			description:      "pipelineNotExistsAndOverLockingNotAllowed_callsAdd",
-			input:            *getPipelineMockWithLockedByValue(),
+			input:            getPipelineLockRequestMock(user),
 			expectedAddCalls: 1,
 		},
 		{
 			description:         "pipelineAlreadyExistsAndOverLockingNotAllowed_callsAdd",
-			input:               *getPipelineMockWithLockedByValue(),
+			input:               getPipelineLockRequestMock(user),
 			expectedAddCalls:    1,
-			fakeFindReturnValue: getPipelineMock(),
+			fakeFindReturnValue: getPipelineMock(""),
 		},
 		{
 			description:             "lockAlreadyExistsButOverLockingIsAllowed_callsAdd",
-			input:                   *getPipelineMockWithLockedByValue(),
+			input:                   getPipelineLockRequestMock(user),
 			serviceAllowOverLocking: true,
 			expectedAddCalls:        1,
-			fakeFindReturnValue:     getPipelineMockWithLockedByValue(),
+			fakeFindReturnValue:     getPipelineMock(user),
 		},
 	} {
 		t.Run(scenario.description, func(t *testing.T) {
@@ -170,7 +170,7 @@ func TestPipelineService_Unlock(t *testing.T) {
 		},
 		{
 			description:      "inputIsOK_callsAdd",
-			input:            getPipelineMock().PipelineIdentifier,
+			input:            getPipelineIdentifierMock(),
 			expectedAddCalls: 1,
 		},
 	} {
@@ -224,18 +224,18 @@ func TestPipelineService_IsDeployAllowed(t *testing.T) {
 		},
 		{
 			description:   "pipelineIsNotFoundFromStore_returnTrue",
-			input:         getPipelineMock().PipelineIdentifier,
+			input:         getPipelineIdentifierMock(),
 			expectedValue: true,
 		},
 		{
 			description:         "pipelineIsLocked_returnFalse",
-			input:               getPipelineMock().PipelineIdentifier,
-			fakeFindReturnValue: getPipelineMockWithLockedByValue(),
+			input:               getPipelineIdentifierMock(),
+			fakeFindReturnValue: getPipelineMock(user),
 		},
 		{
 			description:         "pipelineIsNotLocked_returnTrue",
-			input:               getPipelineMock().PipelineIdentifier,
-			fakeFindReturnValue: getPipelineMock(),
+			input:               getPipelineIdentifierMock(),
+			fakeFindReturnValue: getPipelineMock(""),
 			expectedValue:       true,
 		},
 	} {

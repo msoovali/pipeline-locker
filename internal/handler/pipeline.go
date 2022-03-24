@@ -18,11 +18,11 @@ func NewPipelineHandlers(service service.PipelineService) *pipelineHandlers {
 }
 
 func (h *pipelineHandlers) Lock(c *fiber.Ctx) error {
-	r := new(domain.Pipeline)
+	r := new(domain.PipelineLockRequest)
 	if err := c.BodyParser(r); err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 	}
-	if err := h.service.Lock(createImmutablePipeline(*r)); err != nil {
+	if err := h.service.Lock(createImmutablePipelineLockRequest(*r)); err != nil {
 		return c.Status(fiber.StatusConflict).SendString(err.Error())
 	}
 
@@ -68,10 +68,10 @@ func (h *pipelineHandlers) Index(c *fiber.Ctx) error {
 }
 
 func (h *pipelineHandlers) LockAndRedirect(c *fiber.Ctx) error {
-	r := new(domain.Pipeline)
+	r := new(domain.PipelineLockRequest)
 	err := c.BodyParser(r)
 	if err == nil {
-		err = h.service.Lock(createImmutablePipeline(*r))
+		err = h.service.Lock(createImmutablePipelineLockRequest(*r))
 	}
 	if err == nil {
 		return c.Redirect("/", fiber.StatusSeeOther)
@@ -92,9 +92,11 @@ func createImmutablePipelineIdentifier(p domain.PipelineIdentifier) domain.Pipel
 	}
 }
 
-func createImmutablePipeline(p domain.Pipeline) domain.Pipeline {
-	return domain.Pipeline{
+func createImmutablePipelineLockRequest(p domain.PipelineLockRequest) domain.PipelineLockRequest {
+	return domain.PipelineLockRequest{
 		PipelineIdentifier: createImmutablePipelineIdentifier(p.PipelineIdentifier),
-		LockedBy:           utils.ImmutableString(p.LockedBy),
+		PipelineLockedBy: domain.PipelineLockedBy{
+			LockedBy: utils.ImmutableString(p.LockedBy),
+		},
 	}
 }

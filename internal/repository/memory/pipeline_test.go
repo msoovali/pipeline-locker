@@ -40,7 +40,9 @@ func TestPipelineRepository(t *testing.T) {
 					Project:     projectOne,
 					Environment: environmentOne,
 				},
-				LockedBy: userOne,
+				PipelineLockedBy: domain.PipelineLockedBy{
+					LockedBy: userOne,
+				},
 			},
 			expectedStoreSize: 1,
 		},
@@ -51,7 +53,9 @@ func TestPipelineRepository(t *testing.T) {
 					Project:     projectOne,
 					Environment: environmentOne,
 				},
-				LockedBy: userTwo,
+				PipelineLockedBy: domain.PipelineLockedBy{
+					LockedBy: userTwo,
+				},
 			},
 			expectedStoreSize: 1,
 		},
@@ -62,7 +66,9 @@ func TestPipelineRepository(t *testing.T) {
 					Project:     projectTwo,
 					Environment: environmentTwo,
 				},
-				LockedBy: userTwo,
+				PipelineLockedBy: domain.PipelineLockedBy{
+					LockedBy: userTwo,
+				},
 			},
 			expectedStoreSize: 2,
 		},
@@ -104,7 +110,7 @@ func TestPipelineRepository(t *testing.T) {
 		} else if pipeline.Project != projectOne {
 			t.Errorf("Expected store to return pipeline with project %s, but got project %s from store instead", projectOne, pipeline.Project)
 		} else if pipeline.Environment != environmentOne {
-			t.Errorf("Expected store to return pipeline with environment %s, but got environment %s from store instead", projectOne, pipeline.Project)
+			t.Errorf("Expected store to return pipeline with environment %s, but got environment %s from store instead", projectOne, pipeline.Environment)
 		} else if pipeline.LockedBy != userTwo {
 			t.Errorf("Expected store to return pipeline with user %s, but got user %s from store instead", userTwo, pipeline.LockedBy)
 		}
@@ -159,7 +165,9 @@ func TestPipelineRepository(t *testing.T) {
 				Project:     projectOne,
 				Environment: environmentOne,
 			},
-			LockedBy: userOne,
+			PipelineLockedBy: domain.PipelineLockedBy{
+				LockedBy: userOne,
+			},
 		})
 
 		returnedPipeline := repository.Find(domain.PipelineIdentifier{
