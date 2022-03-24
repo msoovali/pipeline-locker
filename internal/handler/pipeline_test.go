@@ -12,7 +12,7 @@ import (
 type pipelineServiceMock struct {
 	service.PipelineService
 	fakeIsDeployAllowed    func(pipeline domain.PipelineIdentifier) (bool, error)
-	fakeLock               func(pipeline domain.Pipeline) error
+	fakeLock               func(pipeline domain.PipelineLockRequest) error
 	fakeUnlock             func(pipeline domain.PipelineIdentifier) error
 	fakeGetLockedPipelines func() []domain.Pipeline
 }
@@ -25,7 +25,7 @@ func (m *pipelineServiceMock) IsDeployAllowed(pipeline domain.PipelineIdentifier
 	return true, nil
 }
 
-func (m *pipelineServiceMock) Lock(pipeline domain.Pipeline) error {
+func (m *pipelineServiceMock) Lock(pipeline domain.PipelineLockRequest) error {
 	if m.fakeLock != nil {
 		return m.fakeLock(pipeline)
 	}
@@ -91,7 +91,7 @@ func TestPipelineHandler_Lock(t *testing.T) {
 	} {
 		t.Run(scenario.description, func(t *testing.T) {
 			handler := NewPipelineHandlers(&pipelineServiceMock{
-				fakeLock: func(pipeline domain.Pipeline) error {
+				fakeLock: func(pipeline domain.PipelineLockRequest) error {
 					return scenario.fakeLockReturnValue
 				},
 			})

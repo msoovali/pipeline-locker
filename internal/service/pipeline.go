@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"time"
 
 	"github.com/msoovali/pipeline-locker/internal/domain"
 	"github.com/msoovali/pipeline-locker/internal/repository"
@@ -35,7 +36,7 @@ func (s *pipelineService) IsDeployAllowed(request domain.PipelineIdentifier) (bo
 	return pipeline == nil || pipeline.LockedBy == "", nil
 }
 
-func (s *pipelineService) Lock(pipeline domain.Pipeline) error {
+func (s *pipelineService) Lock(pipeline domain.PipelineLockRequest) error {
 	if err := verifyLockRequest(pipeline); err != nil {
 		return err
 	}
@@ -45,7 +46,13 @@ func (s *pipelineService) Lock(pipeline domain.Pipeline) error {
 			return PipelineAlreadyLockedError
 		}
 	}
-	s.repository.Add(pipeline)
+	s.repository.Add(domain.Pipeline{
+		PipelineIdentifier: pipeline.PipelineIdentifier,
+		PipelineLockedBy:   pipeline.PipelineLockedBy,
+		PipelineLockedAt: domain.PipelineLockedAt{
+			LockedAt: time.Now(),
+		},
+	})
 
 	return nil
 }
@@ -76,7 +83,7 @@ func verifyRequest(pipeline domain.PipelineIdentifier) error {
 	return nil
 }
 
-func verifyLockRequest(pipeline domain.Pipeline) error {
+func verifyLockRequest(pipeline domain.PipelineLockRequest) error {
 	if err := verifyRequest(pipeline.PipelineIdentifier); err != nil {
 		return err
 	}

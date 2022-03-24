@@ -3,20 +3,23 @@ package app
 import (
 	"os"
 	"testing"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 func TestConf_parseConfig(t *testing.T) {
 	t.Run("envValuesNotProvided_returnsConfigWithDefaultValues", func(t *testing.T) {
-		config := parseConfig()
+		app := New(fiber.New())
+		app.parseConfig()
 
-		if config.Addr != defaultAddr {
-			t.Errorf("Expected %s, got %s", defaultAddr, config.Addr)
+		if app.Config.Addr != defaultAddr {
+			t.Errorf("Expected %s, got %s", defaultAddr, app.Config.Addr)
 		}
-		if config.allowOverlocking != defaultAllowOverlocking {
-			t.Errorf("Expected %T, got %T", defaultAllowOverlocking, config.allowOverlocking)
+		if app.Config.allowOverlocking != defaultAllowOverlocking {
+			t.Errorf("Expected %T, got %T", defaultAllowOverlocking, app.Config.allowOverlocking)
 		}
-		if config.pipelinesCaseSensitive != defaultPipelinesCaseSensitive {
-			t.Errorf("Expected %T, got %T", defaultPipelinesCaseSensitive, config.pipelinesCaseSensitive)
+		if app.Config.pipelinesCaseSensitive != defaultPipelinesCaseSensitive {
+			t.Errorf("Expected %T, got %T", defaultPipelinesCaseSensitive, app.Config.pipelinesCaseSensitive)
 		}
 	})
 
@@ -27,16 +30,17 @@ func TestConf_parseConfig(t *testing.T) {
 		os.Setenv(addrEnvKey, addrValue)
 		os.Setenv(allowOverlockingKey, "true")
 		os.Setenv(pipelinesCaseSensitiveKey, "false")
-		config := parseConfig()
+		app := New(fiber.New())
+		app.parseConfig()
 
-		if config.Addr != addrValue {
-			t.Errorf("Expected address %s, got %s", addrValue, config.Addr)
+		if app.Config.Addr != addrValue {
+			t.Errorf("Expected address %s, got %s", addrValue, app.Config.Addr)
 		}
-		if config.allowOverlocking != true {
-			t.Errorf("Expected %T, got %T", true, config.allowOverlocking)
+		if app.Config.allowOverlocking != true {
+			t.Errorf("Expected %T, got %T", true, app.Config.allowOverlocking)
 		}
-		if config.pipelinesCaseSensitive != false {
-			t.Errorf("Expected %T, got %T", false, config.pipelinesCaseSensitive)
+		if app.Config.pipelinesCaseSensitive != false {
+			t.Errorf("Expected %T, got %T", false, app.Config.pipelinesCaseSensitive)
 		}
 		os.Clearenv()
 	})

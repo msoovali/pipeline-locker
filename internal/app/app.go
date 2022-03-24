@@ -39,9 +39,9 @@ type Application struct {
 
 func New(router *fiber.App) *Application {
 	app := &Application{
-		Log:    logger.New(),
-		Config: parseConfig(),
+		Log: logger.New(),
 	}
+	app.parseConfig()
 	app.initRepositories()
 	app.initServices()
 	app.initHandlers()
