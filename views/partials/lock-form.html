@@ -1,0 +1,21 @@
+{{if .err}}
+<div class="alert alert-danger" role="alert">
+    {{.err}}
+</div>
+{{end}}
+<form method="POST">
+    <div class="row g-3 align-items-center">
+        <div class="col-auto">
+            <input type="text" class="form-control" placeholder="Project" name="project" value="{{.formInput.Project}}">
+        </div>
+        <div class="col-auto">
+            <input type="text" class="form-control" placeholder="Environment" name="environment" value="{{.formInput.Environment}}">
+        </div>
+        <div class="col-auto">
+            <input type="text" class="form-control" placeholder="Locked by" name="locked_by" value="{{.formInput.LockedBy}}">
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Lock pipeline</button>
+        </div>
+    </div>
+</form>

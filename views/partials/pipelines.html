@@ -1,0 +1,46 @@
+<h3>Locked pipelines</h3>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th scope="col">Project</th>
+            <th scope="col">Environment</th>
+            <th scope="col">Locked by</th>
+            <th scope="col"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {{ range .pipelines }}
+        <tr>
+            <td>
+                {{.Project}}
+            </td>
+            <td>
+                {{.Environment}}
+            </td>
+            <td>
+                {{.LockedBy}}
+            </td>
+            <td>
+                <button onclick="unlockPipeline({{.Project}}, {{.Environment}})" type="button" class="btn btn-danger btn-sm">unlock</button>
+            </td>
+        </tr>
+        {{ end }}
+    </tbody>
+</table>
+
+<script>
+    async function unlockPipeline(project, environment) {
+        const response = await fetch("v1/pipeline/unlock", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            redirect: "follow",
+            body: `{"project":"${project}","environment":"${environment}"}`
+        }).then(response => {
+            if (response.status == 204) {
+                window.location.href = "/";
+            }
+        });
+    }
+</script>
