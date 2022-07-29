@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/msoovali/pipeline-locker/internal/domain"
-	"github.com/msoovali/pipeline-locker/internal/repository"
 )
 
 const (
@@ -15,32 +14,34 @@ const (
 )
 
 type pipelineRepositoryMock struct {
-	repository.PipelineRepository
+	domain.PipelineRepository
 	fakeAdd                 func(pipeline domain.Pipeline)
 	fakeFind                func(pipeline domain.PipelineIdentifier) *domain.Pipeline
 	fakeFindLockedPipelines func() []domain.Pipeline
 }
 
-func (r *pipelineRepositoryMock) Find(pipeline domain.PipelineIdentifier) *domain.Pipeline {
+func (r *pipelineRepositoryMock) Find(pipeline domain.PipelineIdentifier) (*domain.Pipeline, error) {
 	if r.fakeFind != nil {
-		return r.fakeFind(pipeline)
+		return r.fakeFind(pipeline), nil
+	}
+
+	return nil, nil
+}
+
+func (r *pipelineRepositoryMock) Add(pipeline domain.Pipeline) error {
+	if r.fakeAdd != nil {
+		r.fakeAdd(pipeline)
 	}
 
 	return nil
 }
 
-func (r *pipelineRepositoryMock) Add(pipeline domain.Pipeline) {
-	if r.fakeAdd != nil {
-		r.fakeAdd(pipeline)
-	}
-}
-
-func (r *pipelineRepositoryMock) FindLockedPipelines() []domain.Pipeline {
+func (r *pipelineRepositoryMock) FindLockedPipelines() ([]domain.Pipeline, error) {
 	if r.fakeFindLockedPipelines != nil {
-		return r.fakeFindLockedPipelines()
+		return r.fakeFindLockedPipelines(), nil
 	}
 
-	return make([]domain.Pipeline, 0)
+	return make([]domain.Pipeline, 0), nil
 }
 
 func getPipelineMock(lockedBy string) *domain.Pipeline {
@@ -82,7 +83,7 @@ func TestPipelineService_Lock(t *testing.T) {
 		{
 			description:   "projectIsEmpty_returnError",
 			input:         domain.PipelineLockRequest{},
-			expectedError: ProjectEmptyError,
+			expectedError: domain.ErrProjectEmpty,
 		},
 		{
 			description: "environmentIsEmpty_returnError",
@@ -91,17 +92,17 @@ func TestPipelineService_Lock(t *testing.T) {
 					Project: project,
 				},
 			},
-			expectedError: EnvironmentEmptyError,
+			expectedError: domain.ErrEnvironmentEmpty,
 		},
 		{
 			description:   "lockedByIsEmptyString_returnError",
 			input:         getPipelineLockRequestMock(""),
-			expectedError: LockedByEmptyError,
+			expectedError: domain.ErrLockedByEmpty,
 		},
 		{
 			description:         "lockAlreadyExistsAndOverLockingNotAllowed_returnError",
 			input:               getPipelineLockRequestMock(user),
-			expectedError:       PipelineAlreadyLockedError,
+			expectedError:       domain.ErrPipelineAlreadyLocked,
 			fakeFindReturnValue: getPipelineMock(user),
 		},
 		{
@@ -159,14 +160,14 @@ func TestPipelineService_Unlock(t *testing.T) {
 		{
 			description:   "projectIsEmpty_returnError",
 			input:         domain.PipelineIdentifier{},
-			expectedError: ProjectEmptyError,
+			expectedError: domain.ErrProjectEmpty,
 		},
 		{
 			description: "environmentIsEmpty_returnError",
 			input: domain.PipelineIdentifier{
 				Project: project,
 			},
-			expectedError: EnvironmentEmptyError,
+			expectedError: domain.ErrEnvironmentEmpty,
 		},
 		{
 			description:      "inputIsOK_callsAdd",
@@ -213,14 +214,14 @@ func TestPipelineService_IsDeployAllowed(t *testing.T) {
 		{
 			description:   "projectIsEmpty_returnError",
 			input:         domain.PipelineIdentifier{},
-			expectedError: ProjectEmptyError,
+			expectedError: domain.ErrProjectEmpty,
 		},
 		{
 			description: "environmentIsEmpty_returnError",
 			input: domain.PipelineIdentifier{
 				Project: project,
 			},
-			expectedError: EnvironmentEmptyError,
+			expectedError: domain.ErrEnvironmentEmpty,
 		},
 		{
 			description:   "pipelineIsNotFoundFromStore_returnTrue",
@@ -270,7 +271,7 @@ func TestPipelineService_GetLockedPipelines(t *testing.T) {
 		}
 		service := NewPipelineService(repository, false)
 
-		lockedPipelines := service.GetLockedPipelines()
+		lockedPipelines, _ := service.GetLockedPipelines()
 
 		if findLockedPipelinesCalls != 1 {
 			t.Errorf("Expected repository findLockedPipelines() to be called once, got %d", findLockedPipelinesCalls)

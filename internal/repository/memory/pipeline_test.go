@@ -101,7 +101,7 @@ func TestPipelineRepository(t *testing.T) {
 	}
 
 	t.Run("FindByProjectAndEnvironment_pipelineExists_returnsPipeline", func(t *testing.T) {
-		pipeline := repository.Find(domain.PipelineIdentifier{
+		pipeline, _ := repository.Find(domain.PipelineIdentifier{
 			Project:     projectOne,
 			Environment: environmentOne,
 		})
@@ -117,7 +117,7 @@ func TestPipelineRepository(t *testing.T) {
 	})
 
 	t.Run("FindByProjectAndEnvironment_pipelineNotExists_returnsNil", func(t *testing.T) {
-		pipeline := repository.Find(domain.PipelineIdentifier{
+		pipeline, _ := repository.Find(domain.PipelineIdentifier{
 			Project:     projectOne,
 			Environment: environmentTwo,
 		})
@@ -127,7 +127,7 @@ func TestPipelineRepository(t *testing.T) {
 	})
 
 	t.Run("FindByProjectAndEnvironment_pipelineNotExists_returnsNil", func(t *testing.T) {
-		pipeline := repository.Find(domain.PipelineIdentifier{
+		pipeline, _ := repository.Find(domain.PipelineIdentifier{
 			Project:     projectOne,
 			Environment: environmentTwo,
 		})
@@ -137,7 +137,7 @@ func TestPipelineRepository(t *testing.T) {
 	})
 
 	t.Run("FindLockedPipelines_storeHasOnlyOneLockedPipeline_returnsSliceOfOnePipeline", func(t *testing.T) {
-		pipelines := repository.FindLockedPipelines()
+		pipelines, _ := repository.FindLockedPipelines()
 		if pipelines == nil {
 			t.Errorf("Expected store to return slice, but got nil")
 		}
@@ -149,7 +149,7 @@ func TestPipelineRepository(t *testing.T) {
 	repository = NewPipelineRepository(pipelineKeyCaseSensitive)
 
 	t.Run("FindLockedPipelines_storeHasNoLockedPipelines_returnsEmptySlice", func(t *testing.T) {
-		pipelines := repository.FindLockedPipelines()
+		pipelines, _ := repository.FindLockedPipelines()
 		if pipelines == nil {
 			t.Errorf("Expected store to return slice, but got nil")
 		}
@@ -170,7 +170,7 @@ func TestPipelineRepository(t *testing.T) {
 			},
 		})
 
-		returnedPipeline := repository.Find(domain.PipelineIdentifier{
+		returnedPipeline, _ := repository.Find(domain.PipelineIdentifier{
 			Project:     projectTwo,
 			Environment: environmentTwo,
 		})
