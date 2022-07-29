@@ -1,26 +1,17 @@
 package service
 
 import (
-	"errors"
 	"time"
 
 	"github.com/msoovali/pipeline-locker/internal/domain"
-	"github.com/msoovali/pipeline-locker/internal/repository"
-)
-
-var (
-	ProjectEmptyError          = errors.New("REQUEST_PROJECT_EMPTY")
-	EnvironmentEmptyError      = errors.New("REQUEST_ENVIRONMENT_EMPTY")
-	LockedByEmptyError         = errors.New("REQUEST_LOCKED_BY_EMPTY")
-	PipelineAlreadyLockedError = errors.New("PIPELINE_ALREADY_LOCKED")
 )
 
 type pipelineService struct {
-	repository       repository.PipelineRepository
+	repository       domain.PipelineRepository
 	allowOverLocking bool
 }
 
-func NewPipelineService(repository repository.PipelineRepository, allowOverlocking bool) *pipelineService {
+func NewPipelineService(repository domain.PipelineRepository, allowOverlocking bool) *pipelineService {
 	return &pipelineService{
 		repository:       repository,
 		allowOverLocking: allowOverlocking,
@@ -28,22 +19,28 @@ func NewPipelineService(repository repository.PipelineRepository, allowOverlocki
 }
 
 func (s *pipelineService) IsDeployAllowed(request domain.PipelineIdentifier) (bool, error) {
-	if err := verifyRequest(request); err != nil {
+	if err := request.Validate(); err != nil {
 		return false, err
 	}
-	pipeline := s.repository.Find(request)
+	pipeline, err := s.repository.Find(request)
+	if err != nil {
+		return false, err
+	}
 
 	return pipeline == nil || pipeline.LockedBy == "", nil
 }
 
 func (s *pipelineService) Lock(pipeline domain.PipelineLockRequest) error {
-	if err := verifyLockRequest(pipeline); err != nil {
+	if err := pipeline.Validate(); err != nil {
 		return err
 	}
 	if !s.allowOverLocking {
-		existingPipeline := s.repository.Find(pipeline.PipelineIdentifier)
+		existingPipeline, err := s.repository.Find(pipeline.PipelineIdentifier)
+		if err != nil {
+			return err
+		}
 		if existingPipeline != nil && existingPipeline.LockedBy != "" {
-			return PipelineAlreadyLockedError
+			return domain.ErrPipelineAlreadyLocked
 		}
 	}
 	s.repository.Add(domain.Pipeline{
@@ -58,7 +55,7 @@ func (s *pipelineService) Lock(pipeline domain.PipelineLockRequest) error {
 }
 
 func (s *pipelineService) Unlock(pipeline domain.PipelineIdentifier) error {
-	if err := verifyRequest(pipeline); err != nil {
+	if err := pipeline.Validate(); err != nil {
 		return err
 	}
 	s.repository.Add(domain.Pipeline{
@@ -68,28 +65,6 @@ func (s *pipelineService) Unlock(pipeline domain.PipelineIdentifier) error {
 	return nil
 }
 
-func (s *pipelineService) GetLockedPipelines() []domain.Pipeline {
+func (s *pipelineService) GetLockedPipelines() ([]domain.Pipeline, error) {
 	return s.repository.FindLockedPipelines()
-}
-
-func verifyRequest(pipeline domain.PipelineIdentifier) error {
-	if pipeline.Project == "" {
-		return ProjectEmptyError
-	}
-	if pipeline.Environment == "" {
-		return EnvironmentEmptyError
-	}
-
-	return nil
-}
-
-func verifyLockRequest(pipeline domain.PipelineLockRequest) error {
-	if err := verifyRequest(pipeline.PipelineIdentifier); err != nil {
-		return err
-	}
-	if pipeline.LockedBy == "" {
-		return LockedByEmptyError
-	}
-
-	return nil
 }

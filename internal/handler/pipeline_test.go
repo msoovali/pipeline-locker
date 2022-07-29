@@ -5,16 +5,15 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/msoovali/pipeline-locker/internal/domain"
-	"github.com/msoovali/pipeline-locker/internal/service"
 	"github.com/valyala/fasthttp"
 )
 
 type pipelineServiceMock struct {
-	service.PipelineService
+	domain.PipelineService
 	fakeIsDeployAllowed    func(pipeline domain.PipelineIdentifier) (bool, error)
 	fakeLock               func(pipeline domain.PipelineLockRequest) error
 	fakeUnlock             func(pipeline domain.PipelineIdentifier) error
-	fakeGetLockedPipelines func() []domain.Pipeline
+	fakeGetLockedPipelines func() ([]domain.Pipeline, error)
 }
 
 func (m *pipelineServiceMock) IsDeployAllowed(pipeline domain.PipelineIdentifier) (bool, error) {
@@ -41,12 +40,12 @@ func (m *pipelineServiceMock) Unlock(pipeline domain.PipelineIdentifier) error {
 	return nil
 }
 
-func (m *pipelineServiceMock) GetLockedPipelines() []domain.Pipeline {
+func (m *pipelineServiceMock) GetLockedPipelines() ([]domain.Pipeline, error) {
 	if m.fakeGetLockedPipelines != nil {
 		return m.fakeGetLockedPipelines()
 	}
 
-	return nil
+	return nil, nil
 }
 
 func getLockRequestBodyMock() string {
@@ -77,8 +76,8 @@ func TestPipelineHandler_Lock(t *testing.T) {
 			description:          "serviceReturnsError_respondConflict",
 			requestBody:          getLockRequestBodyMock(),
 			expectedStatus:       fiber.StatusConflict,
-			expectedResponseBody: service.PipelineAlreadyLockedError.Error(),
-			fakeLockReturnValue:  service.PipelineAlreadyLockedError,
+			expectedResponseBody: domain.ErrPipelineAlreadyLocked.Error(),
+			fakeLockReturnValue:  domain.ErrPipelineAlreadyLocked,
 			contentTypeHeader:    "application/json",
 		},
 		{
@@ -133,8 +132,8 @@ func TestPipelineHandler_Unlock(t *testing.T) {
 			description:           "serviceReturnsError_respondConflict",
 			requestBody:           getPipelineRequestBodyMock(),
 			expectedStatus:        fiber.StatusConflict,
-			expectedResponseBody:  service.ProjectEmptyError.Error(),
-			fakeUnlockReturnValue: service.ProjectEmptyError,
+			expectedResponseBody:  domain.ErrProjectEmpty.Error(),
+			fakeUnlockReturnValue: domain.ErrProjectEmpty,
 			contentTypeHeader:     "application/json",
 		},
 		{

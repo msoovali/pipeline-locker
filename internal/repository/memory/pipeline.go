@@ -1,8 +1,6 @@
 package memory
 
 import (
-	"strings"
-
 	"github.com/msoovali/pipeline-locker/internal/domain"
 )
 
@@ -20,22 +18,24 @@ func NewPipelineRepository(caseSensitiveKey bool) *pipelineRepository {
 	}
 }
 
-func (r *pipelineRepository) Find(request domain.PipelineIdentifier) *domain.Pipeline {
-	key := r.getKey(request.Project, request.Environment)
+func (r *pipelineRepository) Find(identifier domain.PipelineIdentifier) (*domain.Pipeline, error) {
+	key := identifier.GetKey(r.caseSensitiveKey, separator)
 	pipeline, exists := r.store[key]
 	if !exists {
-		return nil
+		return nil, nil
 	}
 
-	return &pipeline
+	return &pipeline, nil
 }
 
-func (r *pipelineRepository) Add(pipeline domain.Pipeline) {
-	key := r.getKey(pipeline.Project, pipeline.Environment)
+func (r *pipelineRepository) Add(pipeline domain.Pipeline) error {
+	key := pipeline.PipelineIdentifier.GetKey(r.caseSensitiveKey, separator)
 	r.store[key] = pipeline
+
+	return nil
 }
 
-func (r *pipelineRepository) FindLockedPipelines() []domain.Pipeline {
+func (r *pipelineRepository) FindLockedPipelines() ([]domain.Pipeline, error) {
 	lockedPipelines := make([]domain.Pipeline, 0)
 	for _, p := range r.store {
 		if p.LockedBy != "" {
@@ -43,13 +43,5 @@ func (r *pipelineRepository) FindLockedPipelines() []domain.Pipeline {
 		}
 	}
 
-	return lockedPipelines
-}
-
-func (r *pipelineRepository) getKey(project, environment string) string {
-	if !r.caseSensitiveKey {
-		project = strings.ToLower(project)
-		environment = strings.ToLower(environment)
-	}
-	return project + separator + environment
+	return lockedPipelines, nil
 }

@@ -4,14 +4,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/utils"
 	"github.com/msoovali/pipeline-locker/internal/domain"
-	"github.com/msoovali/pipeline-locker/internal/service"
 )
 
 type pipelineHandlers struct {
-	service service.PipelineService
+	service domain.PipelineService
 }
 
-func NewPipelineHandlers(service service.PipelineService) *pipelineHandlers {
+func NewPipelineHandlers(service domain.PipelineService) *pipelineHandlers {
 	return &pipelineHandlers{
 		service: service,
 	}
@@ -57,11 +56,18 @@ func (h *pipelineHandlers) GetStatus(c *fiber.Ctx) error {
 }
 
 func (h *pipelineHandlers) GetLockedPipelines(c *fiber.Ctx) error {
-	return c.JSON(h.service.GetLockedPipelines())
+	pipelines, err := h.service.GetLockedPipelines()
+	if err != nil {
+		return c.Status(fiber.StatusConflict).SendString(err.Error())
+	}
+	return c.JSON(pipelines)
 }
 
 func (h *pipelineHandlers) Index(c *fiber.Ctx) error {
-	pipelines := h.service.GetLockedPipelines()
+	pipelines, err := h.service.GetLockedPipelines()
+	if err != nil {
+		return c.Status(fiber.StatusConflict).SendString(err.Error())
+	}
 	return c.Render("index", fiber.Map{
 		"pipelines": pipelines,
 	}, "layouts/main")
@@ -76,7 +82,7 @@ func (h *pipelineHandlers) LockAndRedirect(c *fiber.Ctx) error {
 	if err == nil {
 		return c.Redirect("/", fiber.StatusSeeOther)
 	}
-	pipelines := h.service.GetLockedPipelines()
+	pipelines, err := h.service.GetLockedPipelines()
 
 	return c.Render("index", fiber.Map{
 		"err":       err,
